@@ -1,0 +1,156 @@
+name: Build for Windows 7
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target'
+        required: true
+        type: choice
+        options:
+          - all:all
+          - restic:all
+          - restic:amd64
+          - restic:386
+          - rclone:all
+          - rclone:amd64
+          - rclone:386
+        default: 'all:all'
+      restic_version:
+        description: 'Restic version (tag, branch, or commit). Leave empty for latest release.'
+        required: false
+        default: ''
+      rclone_version:
+        description: 'Rclone version (tag, branch, or commit). Leave empty for latest release.'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t win7-builder .
+
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Build binaries
+        env:
+          RESTIC_VERSION: ${{ inputs.restic_version }}
+          RCLONE_VERSION: ${{ inputs.rclone_version }}
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -e RESTIC_VERSION="${RESTIC_VERSION}" \
+            -e RCLONE_VERSION="${RCLONE_VERSION}" \
+            win7-builder ${{ inputs.target }}
+
+      - name: List built files
+        id: list_files
+        run: |
+          echo "Built files:"
+          ls -lah output/
+          echo ""
+          echo "File details:"
+          for f in output/*.exe; do
+            if [ -f "$f" ]; then
+              file "$f"
+            fi
+          done
+
+      - name: Upload all artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-win7-binaries
+          path: output/*
+          retention-days: 90
+          if-no-files-found: error
+
+      # Individual artifact uploads for separate downloads
+      - name: Find and upload restic 64-bit
+        if: hashFiles('output/restic-*-win7-64.exe') != ''
+        run: |
+          for f in output/restic-*-win7-64.exe; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f" .exe)
+              echo "Uploading $f as $name"
+              echo "RESTIC64_NAME=$name" >> $GITHUB_ENV
+              echo "RESTIC64_PATH=$f" >> $GITHUB_ENV
+            fi
+          done
+
+      - name: Upload restic 64-bit artifact
+        if: env.RESTIC64_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESTIC64_NAME }}
+          path: ${{ env.RESTIC64_PATH }}
+          retention-days: 90
+
+      - name: Find and upload restic 32-bit
+        if: hashFiles('output/restic-*-win7-32.exe') != ''
+        run: |
+          for f in output/restic-*-win7-32.exe; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f" .exe)
+              echo "Uploading $f as $name"
+              echo "RESTIC32_NAME=$name" >> $GITHUB_ENV
+              echo "RESTIC32_PATH=$f" >> $GITHUB_ENV
+            fi
+          done
+
+      - name: Upload restic 32-bit artifact
+        if: env.RESTIC32_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESTIC32_NAME }}
+          path: ${{ env.RESTIC32_PATH }}
+          retention-days: 90
+
+      - name: Find and upload rclone 64-bit
+        if: hashFiles('output/rclone-*-win7-64.exe') != ''
+        run: |
+          for f in output/rclone-*-win7-64.exe; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f" .exe)
+              echo "Uploading $f as $name"
+              echo "RCLONE64_NAME=$name" >> $GITHUB_ENV
+              echo "RCLONE64_PATH=$f" >> $GITHUB_ENV
+            fi
+          done
+
+      - name: Upload rclone 64-bit artifact
+        if: env.RCLONE64_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RCLONE64_NAME }}
+          path: ${{ env.RCLONE64_PATH }}
+          retention-days: 90
+
+      - name: Find and upload rclone 32-bit
+        if: hashFiles('output/rclone-*-win7-32.exe') != ''
+        run: |
+          for f in output/rclone-*-win7-32.exe; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f" .exe)
+              echo "Uploading $f as $name"
+              echo "RCLONE32_NAME=$name" >> $GITHUB_ENV
+              echo "RCLONE32_PATH=$f" >> $GITHUB_ENV
+            fi
+          done
+
+      - name: Upload rclone 32-bit artifact
+        if: env.RCLONE32_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RCLONE32_NAME }}
+          path: ${{ env.RCLONE32_PATH }}
+          retention-days: 90
