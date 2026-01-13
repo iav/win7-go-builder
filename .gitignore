@@ -1,0 +1,10 @@
+# Build output
+output/
+*.exe
+
+# Source directories (downloaded at runtime)
+restic/
+rclone/
+
+# Go cache
+go/
