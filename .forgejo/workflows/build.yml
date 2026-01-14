@@ -1,0 +1,121 @@
+name: Build for Windows 7
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target'
+        type: choice
+        required: true
+        options:
+          - all:all
+          - restic:all
+          - restic:amd64
+          - restic:386
+          - rclone:all
+          - rclone:amd64
+          - rclone:386
+        default: 'all:all'
+      restic_version:
+        description: 'Restic version (tag, branch, or commit)'
+        required: false
+      rclone_version:
+        description: 'Rclone version (tag, branch, or commit)'
+        required: false
+
+jobs:
+  build-restic-amd64:
+    if: contains(inputs.target, 'all') || inputs.target == 'restic:amd64'
+    runs-on: codeberg-medium
+    container:
+      image: node:22-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Setup and build
+        run: |
+          apt-get update && apt-get install -y curl git unzip file ca-certificates
+          curl -fsSL "https://github.com/XTLS/go-win7/releases/download/patched-1.25.5/go-for-win7-linux-amd64.zip" -o /tmp/go.zip
+          mkdir -p /opt/go-win7 && unzip -q /tmp/go.zip -d /opt/go-win7 && rm /tmp/go.zip
+          export PATH="/opt/go-win7/bin:$PATH" GOROOT="/opt/go-win7" GOPATH="${GITHUB_WORKSPACE}/go"
+          export GOFLAGS="-buildvcs=false" CGO_ENABLED=0 WORKSPACE="${GITHUB_WORKSPACE}"
+          export RESTIC_VERSION="${{ inputs.restic_version }}"
+          chmod +x build.sh && ./build.sh restic:amd64
+          ls -lah output/ && file output/*.exe
+          for f in output/restic-*-win7-64.exe; do [ -f "$f" ] && echo "ARTIFACT_NAME=$(basename $f .exe)" >> $GITHUB_ENV; done
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: output/restic-*-win7-64.exe
+          retention-days: 90
+
+  build-restic-386:
+    if: contains(inputs.target, 'all') || inputs.target == 'restic:386'
+    runs-on: codeberg-medium
+    container:
+      image: node:22-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Setup and build
+        run: |
+          apt-get update && apt-get install -y curl git unzip file ca-certificates
+          curl -fsSL "https://github.com/XTLS/go-win7/releases/download/patched-1.25.5/go-for-win7-linux-amd64.zip" -o /tmp/go.zip
+          mkdir -p /opt/go-win7 && unzip -q /tmp/go.zip -d /opt/go-win7 && rm /tmp/go.zip
+          export PATH="/opt/go-win7/bin:$PATH" GOROOT="/opt/go-win7" GOPATH="${GITHUB_WORKSPACE}/go"
+          export GOFLAGS="-buildvcs=false" CGO_ENABLED=0 WORKSPACE="${GITHUB_WORKSPACE}"
+          export RESTIC_VERSION="${{ inputs.restic_version }}"
+          chmod +x build.sh && ./build.sh restic:386
+          ls -lah output/ && file output/*.exe
+          for f in output/restic-*-win7-32.exe; do [ -f "$f" ] && echo "ARTIFACT_NAME=$(basename $f .exe)" >> $GITHUB_ENV; done
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: output/restic-*-win7-32.exe
+          retention-days: 90
+
+  build-rclone-amd64:
+    if: contains(inputs.target, 'all') || inputs.target == 'rclone:amd64'
+    runs-on: codeberg-medium
+    container:
+      image: node:22-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Setup and build
+        run: |
+          apt-get update && apt-get install -y curl git unzip file ca-certificates
+          curl -fsSL "https://github.com/XTLS/go-win7/releases/download/patched-1.25.5/go-for-win7-linux-amd64.zip" -o /tmp/go.zip
+          mkdir -p /opt/go-win7 && unzip -q /tmp/go.zip -d /opt/go-win7 && rm /tmp/go.zip
+          export PATH="/opt/go-win7/bin:$PATH" GOROOT="/opt/go-win7" GOPATH="${GITHUB_WORKSPACE}/go"
+          export GOFLAGS="-buildvcs=false" CGO_ENABLED=0 WORKSPACE="${GITHUB_WORKSPACE}"
+          export RCLONE_VERSION="${{ inputs.rclone_version }}"
+          chmod +x build.sh && ./build.sh rclone:amd64
+          ls -lah output/ && file output/*.exe
+          for f in output/rclone-*-win7-64.exe; do [ -f "$f" ] && echo "ARTIFACT_NAME=$(basename $f .exe)" >> $GITHUB_ENV; done
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: output/rclone-*-win7-64.exe
+          retention-days: 90
+
+  build-rclone-386:
+    if: contains(inputs.target, 'all') || inputs.target == 'rclone:386'
+    runs-on: codeberg-medium
+    container:
+      image: node:22-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Setup and build
+        run: |
+          apt-get update && apt-get install -y curl git unzip file ca-certificates
+          curl -fsSL "https://github.com/XTLS/go-win7/releases/download/patched-1.25.5/go-for-win7-linux-amd64.zip" -o /tmp/go.zip
+          mkdir -p /opt/go-win7 && unzip -q /tmp/go.zip -d /opt/go-win7 && rm /tmp/go.zip
+          export PATH="/opt/go-win7/bin:$PATH" GOROOT="/opt/go-win7" GOPATH="${GITHUB_WORKSPACE}/go"
+          export GOFLAGS="-buildvcs=false" CGO_ENABLED=0 WORKSPACE="${GITHUB_WORKSPACE}"
+          export RCLONE_VERSION="${{ inputs.rclone_version }}"
+          chmod +x build.sh && ./build.sh rclone:386
+          ls -lah output/ && file output/*.exe
+          for f in output/rclone-*-win7-32.exe; do [ -f "$f" ] && echo "ARTIFACT_NAME=$(basename $f .exe)" >> $GITHUB_ENV; done
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: output/rclone-*-win7-32.exe
+          retention-days: 90
